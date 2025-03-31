@@ -1,7 +1,7 @@
 {
   "name": "@nasheedstation/soundcloud-downloader",
-  "version": "1.0.1",
-  "description": "Download Soundcloud audio with Node.js",
+  "version": "1.0.2",
+  "description": "Download Soundcloud audio with Node.js, this is a forked version, the original script was written by @zackradisic",
   "main": "index.js",
   "types": "./index.d.ts",
   "scripts": {
@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zackradisic/node-soundcloud-downloader.git"
+    "url": "git+https://github.com/NasheedStation/soundcloud-downloader.git"
   },
   "author": "Zack Radisic",
   "license": "MIT",
@@ -62,7 +62,7 @@
     "test": "tests"
   },
   "bugs": {
-    "url": "https://github.com/zackradisic/node-soundcloud-downloader/issues"
+    "url": "https://github.com/NasheedStation/soundcloud-downloader/issues"
   },
-  "homepage": "https://github.com/zackradisic/node-soundcloud-downloader#readme"
+  "homepage": "https://github.com/NasheedStation/soundcloud-downloader/issueggs#readme"
 }
