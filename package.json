@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/zackradisic/node-soundcloud-downloader"
+    "url": "git+https://github.com/zackradisic/node-soundcloud-downloader.git"
   },
   "author": "Zack Radisic",
   "license": "MIT",
@@ -55,5 +55,14 @@
     "music-metadata": "^7.6.6",
     "typedoc": "^0.20.20",
     "typescript": "^4.0.2"
-  }
+  },
+  "directories": {
+    "doc": "docs",
+    "example": "example",
+    "test": "tests"
+  },
+  "bugs": {
+    "url": "https://github.com/zackradisic/node-soundcloud-downloader/issues"
+  },
+  "homepage": "https://github.com/zackradisic/node-soundcloud-downloader#readme"
 }
