@@ -3,3 +3,5 @@ node_modules/
 client_id.env
 .env
 client_id.json
+dist/
+.idea/

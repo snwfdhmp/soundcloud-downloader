@@ -11,7 +11,7 @@ export interface PaginatedQuery<T> {
 }
 
 export const resolveURL = 'https://api-v2.soundcloud.com/resolve'
-export const handleRequestErrs = (err: AxiosError) => {
+export const handleRequestErrs = (err: AxiosError): AxiosError<unknown, unknown> => {
   if (!err.response) return err
   if (!err.response.status) return err
 
@@ -20,7 +20,7 @@ export const handleRequestErrs = (err: AxiosError) => {
   return err
 }
 
-export const appendURL = (url: string, ...params: string[]) => {
+export const appendURL = (url: string, ...params: string[]): string => {
   const u = new URL(url)
   params.forEach((val, idx) => {
     if (idx % 2 === 0) u.searchParams.append(val, params[idx + 1])

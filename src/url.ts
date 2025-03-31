@@ -9,7 +9,7 @@ const firebaseUrlRegex = /^https?:\/\/(soundcloud\.app\.goo\.gl)\/(.*)$/
 
 const firebaseRegexp = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,500}\.[a-zA-Z0-9()]{1,500}\b([-a-zA-Z0-9()@:%_+.~#?&//\\=]*)/g
 
-const isURL = (url: string, testMobile?: boolean, testFirebase?: boolean) => {
+const isURL = (url: string, testMobile?: boolean, testFirebase?: boolean): boolean => {
   let success = false
   if (testMobile) {
     if (url.match(mobileUrlRegex)) success = !!(url.match(regexp) as RegExpMatchArray)[2]
@@ -24,7 +24,7 @@ const isURL = (url: string, testMobile?: boolean, testFirebase?: boolean) => {
   return success
 }
 
-export const isPlaylistURL = (url: string) => {
+export const isPlaylistURL = (url: string): boolean => {
   if (!isURL(url)) return false
 
   try {
@@ -35,23 +35,23 @@ export const isPlaylistURL = (url: string) => {
   }
 }
 
-export const isPersonalizedTrackURL = (url: string) => {
+export const isPersonalizedTrackURL = (url: string): boolean => {
   if (!isURL(url)) return false
   return url.includes('https://soundcloud.com/discover/sets/personalized-tracks::')
 }
 
-export const stripMobilePrefix = (url: string) => {
+export const stripMobilePrefix = (url: string): string => {
   if (!url.includes('m.soundcloud.com')) return url
   const _url = new URL(url)
   _url.hostname = 'soundcloud.com'
   return _url.toString()
 }
 
-export const isFirebaseURL = (url: string) => {
+export const isFirebaseURL = (url: string):boolean => {
   return url.includes('https://soundcloud.app.goo.gl')
 }
 
-export const convertFirebaseURL = async (url: string, axiosInstance: AxiosInstance) => {
+export const convertFirebaseURL = async (url: string, axiosInstance: AxiosInstance): Promise<string> => {
   const _url = new URL(url)
   _url.searchParams.set('d', '1')
   const { data }: { data: string } = await axiosInstance.get(_url.toString())

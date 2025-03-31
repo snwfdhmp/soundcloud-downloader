@@ -4,7 +4,7 @@ import { AxiosInstance } from 'axios'
 import m3u8stream from 'm3u8stream'
 import { handleRequestErrs, appendURL } from './util'
 
-const fromURL = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<any | m3u8stream.Stream> => {
+const fromURL = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   try {
     const link = appendURL(url, 'client_id', clientID)
     const res = await axiosInstance.get(link, {

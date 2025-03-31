@@ -17,6 +17,8 @@ module.exports = {
     'jest'
   ],
   rules: {
-    'no-unused-vars': 'off'
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'warn'
   }
 }

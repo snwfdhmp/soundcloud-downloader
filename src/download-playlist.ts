@@ -2,7 +2,7 @@ import { AxiosInstance } from 'axios'
 import { download } from './download'
 import { getSetInfo } from './info'
 
-export const downloadPlaylist = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<[ReadableStream<any>[], String[]]> => {
+export const downloadPlaylist = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<[NodeJS.ReadableStream[], String[]]> => {
   const info = await getSetInfo(url, clientID, axiosInstance)
 
   const trackNames = []

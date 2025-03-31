@@ -18,7 +18,7 @@ export const getMediaURL = async (url: string, clientID: string, axiosInstance: 
   return res.data.url
 }
 
-export const getProgressiveStream = async (mediaUrl: string, axiosInstance: AxiosInstance) => {
+export const getProgressiveStream = async (mediaUrl: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream> => {
   const r = await axiosInstance.get(mediaUrl, {
     withCredentials: true,
     responseType: 'stream'
@@ -27,19 +27,19 @@ export const getProgressiveStream = async (mediaUrl: string, axiosInstance: Axio
   return r.data
 }
 
-export const getHLSStream = (mediaUrl: string) => m3u8stream(mediaUrl)
+export const getHLSStream = (mediaUrl: string): m3u8stream.Stream => m3u8stream(mediaUrl)
 
 type fromURLFunctionBase = (url: string, clientID: string,
   getMediaURLFunction: (url: string, clientID: string, axiosInstance: AxiosInstance) => Promise<string>,
-  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<any>,
+  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<NodeJS.ReadableStream>,
   getHLSStreamFunction: (mediaUrl: string) => m3u8stream.Stream,
-  axiosInstance: AxiosInstance) => Promise<any | m3u8stream.Stream>
+  axiosInstance: AxiosInstance) => Promise<NodeJS.ReadableStream | m3u8stream.Stream>
 
 export const fromURLBase: fromURLFunctionBase = async (url: string, clientID: string,
   getMediaURLFunction: (url: string, clientID: string, axiosInstance: AxiosInstance) => Promise<string>,
-  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<any>,
+  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<NodeJS.ReadableStream>,
   getHLSStreamFunction: (mediaUrl: string) => m3u8stream.Stream,
-  axiosInstance: AxiosInstance):Promise<any | m3u8stream.Stream> => {
+  axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   try {
     const mediaUrl = await getMediaURLFunction(url, clientID, axiosInstance)
 
@@ -53,21 +53,21 @@ export const fromURLBase: fromURLFunctionBase = async (url: string, clientID: st
   }
 }
 
-export const fromURL = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<any | m3u8stream.Stream> => await fromURLBase(url, clientID, getMediaURL, getProgressiveStream, getHLSStream, axiosInstance)
+export const fromURL = async (url: string, clientID: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => await fromURLBase(url, clientID, getMediaURL, getProgressiveStream, getHLSStream, axiosInstance)
 
 export const fromMediaObjBase = async (media: Transcoding, clientID: string,
   getMediaURLFunction: (url: string, clientID: string, axiosInstance: AxiosInstance) => Promise<string>,
-  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<any>,
+  getProgressiveStreamFunction: (mediaUrl: string, axiosInstance: AxiosInstance) => Promise<NodeJS.ReadableStream>,
   getHLSStreamFunction: (mediaUrl: string) => m3u8stream.Stream,
   fromURLFunction: typeof fromURL,
-  axiosInstance: AxiosInstance): Promise<any | m3u8stream.Stream> => {
+  axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   if (!validatemedia(media)) throw new Error('Invalid media object provided')
   return await fromURLFunction(media.url, clientID, axiosInstance)
 }
 
-export const fromMediaObj = async (media: Transcoding, clientID: string, axiosInstance: AxiosInstance) => await fromMediaObjBase(media, clientID, getMediaURL, getProgressiveStream, getHLSStream, fromURL, axiosInstance)
+export const fromMediaObj = async (media: Transcoding, clientID: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => await fromMediaObjBase(media, clientID, getMediaURL, getProgressiveStream, getHLSStream, fromURL, axiosInstance)
 
-export const fromDownloadLink = async (id: number, clientID: string, axiosInstance: AxiosInstance) => {
+export const fromDownloadLink = async (id: number, clientID: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream> => {
   const { data: { redirectUri } } = await axiosInstance.get(appendURL(`https://api-v2.soundcloud.com/tracks/${id}/download`, 'client_id', clientID))
   const { data } = await axiosInstance.get(redirectUri, {
     responseType: 'stream'
@@ -77,7 +77,7 @@ export const fromDownloadLink = async (id: number, clientID: string, axiosInstan
 }
 
 /** @internal */
-export const download = async (url: string, clientID: string, axiosInstance: AxiosInstance, useDownloadLink = true) => {
+export const download = async (url: string, clientID: string, axiosInstance: AxiosInstance, useDownloadLink = true): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   const info = await getInfo(url, clientID, axiosInstance)
   if (info.downloadable && useDownloadLink) {
     // Some tracks have `downloadable` set to true but will return a 404
@@ -92,6 +92,5 @@ export const download = async (url: string, clientID: string, axiosInstance: Axi
 }
 
 const validatemedia = (media: Transcoding) => {
-  if (!media.url || !media.format) return false
-  return true
+  return !(!media.url || !media.format)
 }

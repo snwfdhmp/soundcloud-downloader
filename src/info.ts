@@ -43,7 +43,7 @@ export interface TrackInfo {
   description?: string,
   media?: { transcodings: Transcoding[] },
   title?: string,
-  publisher_metadata?: any,
+  publisher_metadata?: string,
   duration?: number,
   has_downloads_left?: boolean,
   artwork_url?: string,
@@ -227,7 +227,7 @@ export const getSetInfo = async (url: string, clientID: string, axiosInstance: A
 }
 
 /** @intenral */
-export const getTrackInfoByID = async (clientID: string, axiosInstance: AxiosInstance, ids: number[], playlistID?: number, playlistSecretToken?: string) => {
+export const getTrackInfoByID = async (clientID: string, axiosInstance: AxiosInstance, ids: number[], playlistID?: number, playlistSecretToken?: string): Promise<TrackInfo[]> => {
   return await getTrackInfoBase(clientID, axiosInstance, ids, playlistID, playlistSecretToken)
 }
 export default getInfo

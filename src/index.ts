@@ -1,6 +1,6 @@
 import sckey from 'soundcloud-key-fetch'
 
-import getInfo, { getSetInfo, Transcoding, getTrackInfoByID, TrackInfo, User } from './info'
+import getInfo, { getSetInfo, Transcoding, getTrackInfoByID, TrackInfo, User, SetInfo } from './info'
 import filterMedia, { FilterPredicateObject } from './filter-media'
 import { download, fromMediaObj } from './download'
 
@@ -8,8 +8,9 @@ import isValidURL, { convertFirebaseURL, isFirebaseURL, isPersonalizedTrackURL, 
 
 import STREAMING_PROTOCOLS, { _PROTOCOLS } from './protocols'
 import FORMATS, { _FORMATS } from './formats'
-import { search, related, SoundcloudResource, SearchOptions } from './search'
+import { search, related, SearchOptions, RelatedResponse } from './search'
 import { downloadPlaylist } from './download-playlist'
+import m3u8stream from 'm3u8stream'
 import axios, { AxiosInstance } from 'axios'
 
 import * as path from 'path'
@@ -19,7 +20,7 @@ import { GetLikesOptions, getLikes, Like } from './likes'
 import { getUser } from './user'
 
 /** @internal */
-const downloadFormat = async (url: string, clientID: string, format: FORMATS, axiosInstance: AxiosInstance) => {
+const downloadFormat = async (url: string, clientID: string, format: FORMATS, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   const info = await getInfo(url, clientID, axiosInstance)
   const filtered = filterMedia(info.media.transcodings, { format: format })
   if (filtered.length === 0) throw new Error(`Could not find media with specified format: (${format})`)
@@ -90,7 +91,7 @@ export class SCDL {
    * @param predicateObj - The desired Transcoding object to match
    * @returns An array of Transcodings that match the predicate object
    */
-  filterMedia (media: Transcoding[], predicateObj: FilterPredicateObject) {
+  filterMedia (media: Transcoding[], predicateObj: FilterPredicateObject): Transcoding[] {
     return filterMedia(media, predicateObj)
   }
 
@@ -101,7 +102,7 @@ export class SCDL {
    * @param useDirectLink - Whether or not to use the download link if the artist has set the track to be downloadable. This has erratic behaviour on some environments.
    * @returns A ReadableStream containing the audio data
   */
-  async download (url: string, useDirectLink = true) {
+  async download (url: string, useDirectLink = true): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
     return download(await this.prepareURL(url), await this.getClientID(), this.axios, useDirectLink)
   }
 
@@ -110,7 +111,7 @@ export class SCDL {
    * @param url - The URL of the Soundcloud track
    * @param format - The desired format
   */
-  async downloadFormat (url: string, format: FORMATS) {
+  async downloadFormat (url: string, format: FORMATS): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
     return downloadFormat(await this.prepareURL(url), await this.getClientID(), format, this.axios)
   }
 
@@ -119,7 +120,7 @@ export class SCDL {
    * @param url - URL of the Soundcloud track
    * @returns Info about the track
   */
-  async getInfo (url: string) {
+  async getInfo (url: string): Promise<TrackInfo> {
     return getInfo(await this.prepareURL(url), await this.getClientID(), this.axios)
   }
 
@@ -128,7 +129,7 @@ export class SCDL {
    * @param ids - The ID(s) of the tracks
    * @returns Info about the track
    */
-  async getTrackInfoByID (ids: number[], playlistID?: number, playlistSecretToken?: string) {
+  async getTrackInfoByID (ids: number[], playlistID?: number, playlistSecretToken?: string): Promise<TrackInfo[]> {
     return getTrackInfoByID(await this.getClientID(), this.axios, ids, playlistID, playlistSecretToken)
   }
 
@@ -137,7 +138,7 @@ export class SCDL {
    * @param url - URL of the Soundcloud set
    * @returns Info about the set
    */
-  async getSetInfo (url: string) {
+  async getSetInfo (url: string): Promise<SetInfo> {
     return getSetInfo(await this.prepareURL(url), await this.getClientID(), this.axios)
   }
 
@@ -146,7 +147,7 @@ export class SCDL {
    * @param options - The search option
    * @returns SearchResponse
    */
-  async search (options: SearchOptions) {
+  async search (options: SearchOptions): Promise<PaginatedQuery<User | SetInfo | TrackInfo>> {
     return search(options, this.axios, await this.getClientID())
   }
 
@@ -156,7 +157,7 @@ export class SCDL {
    * @param limit - The number of results to return
    * @param offset - Used for pagination, set to 0 if you will not use this feature.
    */
-  async related (id: number, limit: number, offset = 0) {
+  async related (id: number, limit: number, offset = 0): Promise<RelatedResponse<TrackInfo>> {
     return related(id, limit, offset, this.axios, await this.getClientID())
   }
 
@@ -164,7 +165,7 @@ export class SCDL {
    * Returns the audio streams and titles of the tracks in the given playlist.
    * @param url - The url of the playlist
    */
-  async downloadPlaylist (url: string): Promise<[ReadableStream<any>[], String[]]> {
+  async downloadPlaylist (url: string): Promise<[NodeJS.ReadableStream[], String[]]> {
     return downloadPlaylist(await this.prepareURL(url), await this.getClientID(), this.axios)
   }
 
@@ -203,7 +204,7 @@ export class SCDL {
    * Sets the instance of Axios to use to make requests to SoundCloud API
    * @param instance - An instance of Axios
    */
-  setAxiosInstance (instance: AxiosInstance) {
+  setAxiosInstance (instance: AxiosInstance): void {
     this.axios = instance
   }
 
@@ -211,7 +212,7 @@ export class SCDL {
    * Returns whether or not the given URL is a valid Soundcloud URL
    * @param url - URL of the Soundcloud track
   */
-  isValidUrl (url: string) {
+  isValidUrl (url: string): boolean {
     return isValidURL(url, this.convertFirebaseLinks, this.stripMobilePrefix)
   }
 
@@ -219,7 +220,7 @@ export class SCDL {
    * Returns whether or not the given URL is a valid playlist SoundCloud URL
    * @param url - The URL to check
    */
-  isPlaylistURL (url: string) {
+  isPlaylistURL (url: string):boolean {
     return isPlaylistURL(url)
   }
 
@@ -227,7 +228,7 @@ export class SCDL {
    * Returns true if the given URL is a personalized track URL. (of the form https://soundcloud.com/discover/sets/personalized-tracks::user-sdlkfjsldfljs:847104873)
    * @param url - The URL to check
    */
-  isPersonalizedTrackURL (url: string) {
+  isPersonalizedTrackURL (url: string):boolean {
     return isPersonalizedTrackURL(url)
   }
 
@@ -235,7 +236,7 @@ export class SCDL {
    * Returns true if the given URL is a Firebase URL (of the form https://soundcloud.app.goo.gl/XXXXXXXX)
    * @param url - The URL to check
    */
-  isFirebaseURL (url: string) {
+  isFirebaseURL (url: string):boolean {
     return isFirebaseURL(url)
   }
 

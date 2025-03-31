@@ -6,7 +6,7 @@ import { handleRequestErrs, appendURL } from './util'
 import { Transcoding } from './info'
 import { AxiosInstance } from 'axios'
 
-const fromMedia = async (media: Transcoding, clientID: string, axiosInstance: AxiosInstance): Promise<any | m3u8stream.Stream> => {
+const fromMedia = async (media: Transcoding, clientID: string, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
   if (!validatemedia) throw new Error('Invalid media object provided')
 
   try {

@@ -8,7 +8,8 @@
     "docs": "typedoc --out docs ./src --excludeInternal; touch ./docs/.nojekyll",
     "build": "npx tsc src/*.ts --outDir dist --esModuleInterop",
     "publish-script": "./publish.sh",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "lint": "eslint src/ --ext .ts"
   },
   "keywords": [
     "soundcloud",
@@ -26,11 +27,11 @@
   "author": "Zack Radisic",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "^7.10.3",
-    "axios": "^0.21.0",
-    "dotenv": "^8.2.0",
-    "m3u8stream": "^0.8.0",
-    "soundcloud-key-fetch": "^1.0.10"
+    "@babel/runtime": "^7.27.0",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.7",
+    "m3u8stream": "^0.8.6",
+    "soundcloud-key-fetch": "^1.0.13"
   },
   "typings": "./index.d.ts",
   "devDependencies": {
