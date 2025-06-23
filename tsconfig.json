@@ -6,9 +6,10 @@
         "esModuleInterop": true,
         "declaration": true,
         "sourceMap": true,
-        "listFiles": true,
         "newLine": "LF",
-        "noEmitOnError": true
+        "noEmitOnError": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true
     },
     "exclude": ["node_modules", "dist"]
 }

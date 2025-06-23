@@ -1,88 +1,113 @@
-import sckey from 'soundcloud-key-fetch'
+// @ts-ignore // i will not inspect further, please do it if you want to. PRs are welcome.
+import sckey from "soundcloud-key-fetch";
 
-import getInfo, { getSetInfo, Transcoding, getTrackInfoByID, TrackInfo, User, SetInfo } from './info'
-import filterMedia, { FilterPredicateObject } from './filter-media'
-import { download, fromMediaObj } from './download'
+import getInfo, {
+  getSetInfo,
+  Transcoding,
+  getTrackInfoByID,
+  TrackInfo,
+  User,
+  SetInfo,
+} from "./info";
+import filterMedia, { FilterPredicateObject } from "./filter-media";
+import { download, fromMediaObj } from "./download";
 
-import isValidURL, { convertFirebaseURL, isFirebaseURL, isPersonalizedTrackURL, isPlaylistURL, stripMobilePrefix } from './url'
+import isValidURL, {
+  convertFirebaseURL,
+  isFirebaseURL,
+  isPersonalizedTrackURL,
+  isPlaylistURL,
+  stripMobilePrefix,
+} from "./url";
 
-import STREAMING_PROTOCOLS, { _PROTOCOLS } from './protocols'
-import FORMATS, { _FORMATS } from './formats'
-import { search, related, SearchOptions, RelatedResponse } from './search'
-import { downloadPlaylist } from './download-playlist'
-import m3u8stream from 'm3u8stream'
-import axios, { AxiosInstance } from 'axios'
+import STREAMING_PROTOCOLS, { _PROTOCOLS } from "./protocols";
+import FORMATS, { _FORMATS } from "./formats";
+import { search, related, SearchOptions, RelatedResponse } from "./search";
+import { downloadPlaylist } from "./download-playlist";
+import m3u8stream from "m3u8stream";
+import axios, { AxiosInstance } from "axios";
 
-import * as path from 'path'
-import * as fs from 'fs'
-import { PaginatedQuery } from './util'
-import { GetLikesOptions, getLikes, Like } from './likes'
-import { getUser } from './user'
+import * as path from "path";
+import * as fs from "fs";
+import { PaginatedQuery } from "./util";
+import { GetLikesOptions, getLikes, Like } from "./likes";
+import { getUser } from "./user";
 
 /** @internal */
-const downloadFormat = async (url: string, clientID: string, format: FORMATS, axiosInstance: AxiosInstance): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
-  const info = await getInfo(url, clientID, axiosInstance)
-  const filtered = filterMedia(info.media.transcodings, { format: format })
-  if (filtered.length === 0) throw new Error(`Could not find media with specified format: (${format})`)
-  return await fromMediaObj(filtered[0], clientID, axiosInstance)
-}
+const downloadFormat = async (
+  url: string,
+  clientID: string,
+  format: FORMATS,
+  axiosInstance: AxiosInstance
+): Promise<NodeJS.ReadableStream | m3u8stream.Stream> => {
+  const info = await getInfo(url, clientID, axiosInstance);
+  if (!info.media) {
+    throw new Error("Media is undefined");
+  }
+  const filtered = filterMedia(info.media.transcodings, { format: format });
+  if (filtered.length === 0)
+    throw new Error(`Could not find media with specified format: (${format})`);
+  return await fromMediaObj(filtered[0], clientID, axiosInstance);
+};
 
 interface ClientIDData {
-  clientID: string,
-  date: Date
+  clientID: string;
+  date: Date;
 }
 
 export interface SCDLOptions {
   // Set a custom client ID to use
-  clientID?: string,
+  clientID?: string;
   // Set to true to save client ID to file
-  saveClientID?: boolean,
+  saveClientID?: boolean;
   // File path to save client ID, defaults to '../client_id.json"
-  filePath?: string,
+  filePath?: string;
   // Custom axios instance to use
-  axiosInstance?: AxiosInstance,
+  axiosInstance?: AxiosInstance;
   // Whether or not to automatically convert mobile links to regular links, defaults to true
-  stripMobilePrefix?: boolean,
+  stripMobilePrefix?: boolean;
   // Whether or not to automatically convert SoundCloud Firebase links copied from the mobile app
   // (e.g. https://soundcloud.app.goo.gl/xxxxxxxxx), defaults to true.
-  convertFirebaseLinks?: boolean,
+  convertFirebaseLinks?: boolean;
 }
 
 export class SCDL {
-  STREAMING_PROTOCOLS: { [key: string]: STREAMING_PROTOCOLS }
-  FORMATS: { [key: string]: FORMATS }
+  STREAMING_PROTOCOLS: { [key: string]: STREAMING_PROTOCOLS };
+  FORMATS: { [key: string]: FORMATS };
 
-  private _clientID?: string
-  private _filePath?: string
+  private _clientID?: string;
+  private _filePath?: string;
 
-  axios: AxiosInstance
-  saveClientID = process.env.SAVE_CLIENT_ID ? process.env.SAVE_CLIENT_ID.toLowerCase() === 'true' : false
+  axios: AxiosInstance;
+  saveClientID = process.env.SAVE_CLIENT_ID
+    ? process.env.SAVE_CLIENT_ID.toLowerCase() === "true"
+    : false;
 
-  stripMobilePrefix: boolean
-  convertFirebaseLinks: boolean
+  stripMobilePrefix: boolean;
+  convertFirebaseLinks: boolean;
 
-  constructor (options?: SCDLOptions) {
-    if (!options) options = {}
+  constructor(options?: SCDLOptions) {
+    if (!options) options = {};
     if (options.saveClientID) {
-      this.saveClientID = options.saveClientID
-      if (options.filePath) this._filePath = options.filePath
+      this.saveClientID = options.saveClientID;
+      if (options.filePath) this._filePath = options.filePath;
     } else {
       if (options.clientID) {
-        this._clientID = options.clientID
+        this._clientID = options.clientID;
       }
     }
 
     if (options.axiosInstance) {
-      this.setAxiosInstance(options.axiosInstance)
+      this.setAxiosInstance(options.axiosInstance);
     } else {
-      this.setAxiosInstance(axios)
+      this.setAxiosInstance(axios);
     }
 
-    if (!options.stripMobilePrefix) options.stripMobilePrefix = true
-    if (!options.convertFirebaseLinks) options.convertFirebaseLinks = true
+    if (!options.stripMobilePrefix) options.stripMobilePrefix = true;
+    if (!options.convertFirebaseLinks) options.convertFirebaseLinks = true;
 
-    this.stripMobilePrefix = options.stripMobilePrefix
-    this.convertFirebaseLinks = options.convertFirebaseLinks
+    this.stripMobilePrefix = options.stripMobilePrefix;
+    this.convertFirebaseLinks = options.convertFirebaseLinks;
   }
 
   /**
@@ -91,8 +116,11 @@ export class SCDL {
    * @param predicateObj - The desired Transcoding object to match
    * @returns An array of Transcodings that match the predicate object
    */
-  filterMedia (media: Transcoding[], predicateObj: FilterPredicateObject): Transcoding[] {
-    return filterMedia(media, predicateObj)
+  filterMedia(
+    media: Transcoding[],
+    predicateObj: FilterPredicateObject
+  ): Transcoding[] {
+    return filterMedia(media, predicateObj);
   }
 
   /**
@@ -101,27 +129,47 @@ export class SCDL {
    * @param url - The URL of the Soundcloud track
    * @param useDirectLink - Whether or not to use the download link if the artist has set the track to be downloadable. This has erratic behaviour on some environments.
    * @returns A ReadableStream containing the audio data
-  */
-  async download (url: string, useDirectLink = true): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
-    return download(await this.prepareURL(url), await this.getClientID(), this.axios, useDirectLink)
+   */
+  async download(
+    url: string,
+    useDirectLink = true
+  ): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
+    return download(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      this.axios,
+      useDirectLink
+    );
   }
 
   /**
    *  Get the audio of a given track with the specified format
    * @param url - The URL of the Soundcloud track
    * @param format - The desired format
-  */
-  async downloadFormat (url: string, format: FORMATS): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
-    return downloadFormat(await this.prepareURL(url), await this.getClientID(), format, this.axios)
+   */
+  async downloadFormat(
+    url: string,
+    format: FORMATS
+  ): Promise<NodeJS.ReadableStream | m3u8stream.Stream> {
+    return downloadFormat(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      format,
+      this.axios
+    );
   }
 
   /**
    * Returns info about a given track.
    * @param url - URL of the Soundcloud track
    * @returns Info about the track
-  */
-  async getInfo (url: string): Promise<TrackInfo> {
-    return getInfo(await this.prepareURL(url), await this.getClientID(), this.axios)
+   */
+  async getInfo(url: string): Promise<TrackInfo> {
+    return getInfo(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      this.axios
+    );
   }
 
   /**
@@ -129,8 +177,18 @@ export class SCDL {
    * @param ids - The ID(s) of the tracks
    * @returns Info about the track
    */
-  async getTrackInfoByID (ids: number[], playlistID?: number, playlistSecretToken?: string): Promise<TrackInfo[]> {
-    return getTrackInfoByID(await this.getClientID(), this.axios, ids, playlistID, playlistSecretToken)
+  async getTrackInfoByID(
+    ids: number[],
+    playlistID?: number,
+    playlistSecretToken?: string
+  ): Promise<TrackInfo[]> {
+    return getTrackInfoByID(
+      await this.getClientID(),
+      this.axios,
+      ids,
+      playlistID,
+      playlistSecretToken
+    );
   }
 
   /**
@@ -138,8 +196,12 @@ export class SCDL {
    * @param url - URL of the Soundcloud set
    * @returns Info about the set
    */
-  async getSetInfo (url: string): Promise<SetInfo> {
-    return getSetInfo(await this.prepareURL(url), await this.getClientID(), this.axios)
+  async getSetInfo(url: string): Promise<SetInfo> {
+    return getSetInfo(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      this.axios
+    );
   }
 
   /**
@@ -147,8 +209,10 @@ export class SCDL {
    * @param options - The search option
    * @returns SearchResponse
    */
-  async search (options: SearchOptions): Promise<PaginatedQuery<User | SetInfo | TrackInfo>> {
-    return search(options, this.axios, await this.getClientID())
+  async search(
+    options: SearchOptions
+  ): Promise<PaginatedQuery<User | SetInfo | TrackInfo>> {
+    return search(options, this.axios, await this.getClientID());
   }
 
   /**
@@ -157,16 +221,26 @@ export class SCDL {
    * @param limit - The number of results to return
    * @param offset - Used for pagination, set to 0 if you will not use this feature.
    */
-  async related (id: number, limit: number, offset = 0): Promise<RelatedResponse<TrackInfo>> {
-    return related(id, limit, offset, this.axios, await this.getClientID())
+  async related(
+    id: number,
+    limit: number,
+    offset = 0
+  ): Promise<RelatedResponse<TrackInfo>> {
+    return related(id, limit, offset, this.axios, await this.getClientID());
   }
 
   /**
    * Returns the audio streams and titles of the tracks in the given playlist.
    * @param url - The url of the playlist
    */
-  async downloadPlaylist (url: string): Promise<[NodeJS.ReadableStream[], String[]]> {
-    return downloadPlaylist(await this.prepareURL(url), await this.getClientID(), this.axios)
+  async downloadPlaylist(
+    url: string
+  ): Promise<[NodeJS.ReadableStream[], String[]]> {
+    return downloadPlaylist(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      this.axios
+    );
   }
 
   /**
@@ -174,142 +248,176 @@ export class SCDL {
    * @param options - Can either be the profile URL of the user, or their ID
    * @returns - An array of tracks
    */
-  async getLikes (options: GetLikesOptions): Promise<PaginatedQuery<Like>> {
-    let id: number
-    const clientID = await this.getClientID()
+  async getLikes(options: GetLikesOptions): Promise<PaginatedQuery<Like>> {
+    let id: number;
+    const clientID = await this.getClientID();
     if (options.id) {
-      id = options.id
+      id = options.id;
     } else if (options.profileUrl) {
-      const user = await getUser(await this.prepareURL(options.profileUrl), clientID, this.axios)
-      id = user.id
+      const user = await getUser(
+        await this.prepareURL(options.profileUrl),
+        clientID,
+        this.axios
+      );
+      id = user.id;
     } else if (options.nextHref) {
-      return await getLikes(options, clientID, this.axios)
+      return await getLikes(options, clientID, this.axios);
     } else {
-      throw new Error('options.id or options.profileURL must be provided.')
+      throw new Error("options.id or options.profileURL must be provided.");
     }
-    options.id = id
+    options.id = id;
 
-    return getLikes(options, clientID, this.axios)
+    return getLikes(options, clientID, this.axios);
   }
 
   /**
    * Returns information about a user
    * @param url - The profile URL of the user
    */
-  async getUser (url: string): Promise<User> {
-    return getUser(await this.prepareURL(url), await this.getClientID(), this.axios)
+  async getUser(url: string): Promise<User> {
+    return getUser(
+      await this.prepareURL(url),
+      await this.getClientID(),
+      this.axios
+    );
   }
 
   /**
    * Sets the instance of Axios to use to make requests to SoundCloud API
    * @param instance - An instance of Axios
    */
-  setAxiosInstance (instance: AxiosInstance): void {
-    this.axios = instance
+  setAxiosInstance(instance: AxiosInstance): void {
+    this.axios = instance;
   }
 
   /**
    * Returns whether or not the given URL is a valid Soundcloud URL
    * @param url - URL of the Soundcloud track
-  */
-  isValidUrl (url: string): boolean {
-    return isValidURL(url, this.convertFirebaseLinks, this.stripMobilePrefix)
+   */
+  isValidUrl(url: string): boolean {
+    return isValidURL(url, this.convertFirebaseLinks, this.stripMobilePrefix);
   }
 
   /**
    * Returns whether or not the given URL is a valid playlist SoundCloud URL
    * @param url - The URL to check
    */
-  isPlaylistURL (url: string):boolean {
-    return isPlaylistURL(url)
+  isPlaylistURL(url: string): boolean {
+    return isPlaylistURL(url);
   }
 
   /**
    * Returns true if the given URL is a personalized track URL. (of the form https://soundcloud.com/discover/sets/personalized-tracks::user-sdlkfjsldfljs:847104873)
    * @param url - The URL to check
    */
-  isPersonalizedTrackURL (url: string):boolean {
-    return isPersonalizedTrackURL(url)
+  isPersonalizedTrackURL(url: string): boolean {
+    return isPersonalizedTrackURL(url);
   }
 
   /**
    * Returns true if the given URL is a Firebase URL (of the form https://soundcloud.app.goo.gl/XXXXXXXX)
    * @param url - The URL to check
    */
-  isFirebaseURL (url: string):boolean {
-    return isFirebaseURL(url)
+  isFirebaseURL(url: string): boolean {
+    return isFirebaseURL(url);
   }
 
-  async getClientID (): Promise<string> {
-    if (!this._clientID) {
-      await this.setClientID()
+  async getClientID(): Promise<string> {
+    let clientId = this._clientID;
+    if (!clientId) {
+      clientId = await this.setClientID();
     }
 
-    return this._clientID
+    return clientId;
   }
 
   /** @internal */
-  async setClientID (clientID?: string): Promise<string> {
-    if (!clientID) {
-      if (!this._clientID) {
-        if (this.saveClientID) {
-          const filename = path.resolve(__dirname, this._filePath ? this._filePath : '../client_id.json')
-          const c = await this._getClientIDFromFile(filename)
-          if (!c) {
-            this._clientID = await sckey.fetchKey()
-            const data = {
-              clientID: this._clientID,
-              date: new Date().toISOString()
-            }
-            fs.writeFile(filename, JSON.stringify(data), {}, err => {
-              if (err) console.log('Failed to save client_id to file: ' + err)
-            })
-          } else {
-            this._clientID = c
-          }
+  async setClientID(clientID?: string): Promise<string> {
+    if (clientID) {
+      this._clientID = clientID;
+      return clientID;
+    }
+
+    if (!this._clientID) {
+      if (!this.saveClientID) {
+        this._clientID = await sckey.fetchKey();
+      } else {
+        const filename = path.resolve(
+          __dirname,
+          this._filePath ? this._filePath : "../client_id.json"
+        );
+        const c = await this._getClientIDFromFile(filename);
+        if (c) {
+          this._clientID = c;
         } else {
-          this._clientID = await sckey.fetchKey()
+          this._clientID = await sckey.fetchKey();
+          const data = {
+            clientID: this._clientID,
+            date: new Date().toISOString(),
+          };
+          fs.writeFile(filename, JSON.stringify(data), {}, (err) => {
+            if (err) console.log("Failed to save client_id to file: " + err);
+          });
         }
       }
-
-      return this._clientID
     }
 
-    this._clientID = clientID
+    const clientId = this._clientID;
+    if (!clientId) {
+      throw new Error("Failed to get client ID");
+    }
 
-    return clientID
+    return clientId;
   }
 
   /** @internal */
-  private async _getClientIDFromFile (filename: string): Promise<string> {
+  private async _getClientIDFromFile(filename: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (!fs.existsSync(filename)) return resolve('')
+      if (!fs.existsSync(filename)) return resolve("");
 
-      fs.readFile(filename, 'utf8', (err: NodeJS.ErrnoException, data: string) => {
-        if (err) return reject(err)
-        let c: ClientIDData
-        try {
-          c = JSON.parse(data)
-        } catch (err) {
-          return reject(err)
+      fs.readFile(
+        filename,
+        "utf8",
+        (err: NodeJS.ErrnoException, data: string) => {
+          if (err) return reject(err);
+          let c: ClientIDData;
+          try {
+            c = JSON.parse(data);
+          } catch (err) {
+            return reject(err);
+          }
+          if (!c.date && !c.clientID)
+            return reject(
+              new Error(
+                "Property 'data' or 'clientID' missing from client_id.json"
+              )
+            );
+          if (typeof c.clientID !== "string")
+            return reject(
+              new Error("Property 'clientID' is not a string in client_id.json")
+            );
+          if (typeof c.date !== "string")
+            return reject(
+              new Error("Property 'date' is not a string in client_id.json")
+            );
+          const d = new Date(c.date);
+          if (Number.isNaN(d.getDay()))
+            return reject(
+              new Error("Invalid date object from 'date' in client_id.json")
+            );
+          const dayMs = 60 * 60 * 24 * 1000;
+          if (new Date().getTime() - d.getTime() >= dayMs) {
+            // Older than a day, delete
+            fs.unlink(filename, (err) => {
+              if (err) console.log("Failed to delete client_id.json: " + err);
+            });
+            return resolve("");
+          } else {
+            return resolve(c.clientID);
+          }
         }
-        if (!c.date && !c.clientID) return reject(new Error("Property 'data' or 'clientID' missing from client_id.json"))
-        if (typeof c.clientID !== 'string') return reject(new Error("Property 'clientID' is not a string in client_id.json"))
-        if (typeof c.date !== 'string') return reject(new Error("Property 'date' is not a string in client_id.json"))
-        const d = new Date(c.date)
-        if (Number.isNaN(d.getDay())) return reject(new Error("Invalid date object from 'date' in client_id.json"))
-        const dayMs = 60 * 60 * 24 * 1000
-        if (new Date().getTime() - d.getTime() >= dayMs) {
-          // Older than a day, delete
-          fs.unlink(filename, err => {
-            if (err) console.log('Failed to delete client_id.json: ' + err)
-          })
-          return resolve('')
-        } else {
-          return resolve(c.clientID)
-        }
-      })
-    })
+      );
+    });
   }
 
   /**
@@ -317,25 +425,25 @@ export class SCDL {
    * and converting it to a regular URL (if this.convertFireBaseLinks is true.)
    * @param url
    */
-  async prepareURL (url: string): Promise<string> {
-    if (this.stripMobilePrefix) url = stripMobilePrefix(url)
+  async prepareURL(url: string): Promise<string> {
+    if (this.stripMobilePrefix) url = stripMobilePrefix(url);
     if (this.convertFirebaseLinks) {
-      if (isFirebaseURL(url)) url = await convertFirebaseURL(url, this.axios)
+      if (isFirebaseURL(url)) url = await convertFirebaseURL(url, this.axios);
     }
 
-    return url
+    return url;
   }
 }
 
 // SCDL instance with default configutarion
-const scdl = new SCDL()
+const scdl = new SCDL();
 
 // Creates an instance of SCDL with custom configuration
-const create = (options: SCDLOptions): SCDL => new SCDL(options)
+const create = (options: SCDLOptions): SCDL => new SCDL(options);
 
-export { create }
+export { create };
 
-scdl.STREAMING_PROTOCOLS = _PROTOCOLS
-scdl.FORMATS = _FORMATS
+scdl.STREAMING_PROTOCOLS = _PROTOCOLS;
+scdl.FORMATS = _FORMATS;
 
-export default scdl
+export default scdl;
