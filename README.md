@@ -1,4 +1,4 @@
-![node-soundcloud-downloader](https://socialify.git.ci/nasheedstation/soundcloud-downloader/image?font=Raleway&language=1&owner=1&stargazers=1&theme=Dark)
+![node-soundcloud-downloader](https://socialify.git.ci/snwfdhmp/soundcloud-downloader/image?font=Raleway&language=1&owner=1&stargazers=1&theme=Dark)
 
 
 [![Zack Radisic](https://img.shields.io/badge/Author-Zack%20Radisic-green)](https://github.com/zackradisic)
@@ -7,7 +7,7 @@
 
 Download Soundcloud tracks with Node.js
 ```
-npm install @nasheedstation/soundcloud-downloader
+npm install @snwfdhmp/soundcloud-downloader
 ```
 
 I couldn't find any packages that worked with a Discord bot I was working on so I created my own.
