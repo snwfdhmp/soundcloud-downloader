@@ -1,12 +1,5 @@
 > Fork of zackradisic/soundcloud-downloader
 
-![node-soundcloud-downloader](https://socialify.git.ci/snwfdhmp/soundcloud-downloader/image?font=Raleway&language=1&owner=1&stargazers=1&theme=Dark)
-
-
-[![Zack Radisic](https://img.shields.io/badge/Author-Zack%20Radisic-green)](https://github.com/zackradisic)
-[![downloads](https://img.shields.io/npm/dt/soundcloud-downloader)](https://www.npmjs.com/package/soundcloud-downloader)
-
-
 Download Soundcloud tracks with Node.js
 ```
 npm install @snwfdhmp/soundcloud-downloader
